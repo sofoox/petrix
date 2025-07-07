@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       label: data.label,
     }));
 
-    const { data: inserted, error } = await supabase
+    const { error } = await supabase
       .from("sensor_data")
       .insert(parsedRecords);
 
@@ -42,8 +42,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       message: "JSON parsed and data inserted into Supabase",
-      rows_received: parsedRecords.length,
-      rows_inserted: inserted.length,
+      rows_received: parsedRecords.length
     });
   } catch (error) {
     console.error("JSON parsing or DB error:", error);
