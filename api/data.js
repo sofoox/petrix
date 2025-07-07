@@ -1,10 +1,16 @@
 import csv from "csv-parser";
+import { createClient } from "@supabase/supabase-js";
 
 export const config = {
   api: {
-    bodyParser: false,  // Disattiviamo il body parser per leggere lo stream grezzo
+    bodyParser: false,
   },
 };
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 export default async function handler(req, res) {
   if (req.method !== "POST") {
@@ -19,7 +25,6 @@ export default async function handler(req, res) {
         .pipe(csv())
         .on("data", (data) => {
           try {
-            // Converte i campi numerici se serve
             const parsed = {
               timestamp: data.timestamp,
               pir: parseInt(data.pir, 10),
@@ -40,13 +45,23 @@ export default async function handler(req, res) {
         .on("error", reject);
     });
 
+    const inserted = [];
+    for (const row of results) {
+      const { error } = await supabase.from("sensor_data").insert(row);
+      if (error) {
+        console.error("DB insert error:", error);
+      } else {
+        inserted.push(row);
+      }
+    }
+
     return res.status(200).json({
-      message: "CSV parsed successfully",
-      rows: results.length,
-      data: results,
+      message: "CSV parsed and data inserted into Supabase",
+      rows_received: results.length,
+      rows_inserted: inserted.length,
     });
   } catch (error) {
-    console.error("CSV parsing failed:", error);
-    return res.status(500).json({ error: "Failed to parse CSV" });
+    console.error("CSV parsing or DB error:", error);
+    return res.status(500).json({ error: "Failed to parse CSV or insert data" });
   }
 }
