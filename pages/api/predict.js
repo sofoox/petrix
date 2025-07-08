@@ -1,21 +1,22 @@
-// pages/api/predict.js
-
 import { IncomingForm } from 'formidable';
 import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
+// Disattiva il body parser di Next.js per usare formidable
 export const config = {
   api: {
     bodyParser: false,
   },
 };
 
+// Inizializza il client Supabase
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Parser form asincrono
 function parseForm(req) {
   return new Promise((resolve, reject) => {
     const form = new IncomingForm({ keepExtensions: true, uploadDir: '/tmp' });
@@ -27,6 +28,7 @@ function parseForm(req) {
   });
 }
 
+// Endpoint principale
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -35,7 +37,7 @@ export default async function handler(req, res) {
   try {
     const { fields, files } = await parseForm(req);
 
-    // 📸 Se è presente un'immagine
+    // ✅ GESTIONE IMMAGINE
     if (files.image) {
       const image = files.image;
       const fileName = `${Date.now()}_${image.originalFilename}`;
@@ -54,7 +56,7 @@ export default async function handler(req, res) {
       });
     }
 
-    // 📝 Se è presente un testo
+    // ✅ GESTIONE TESTO
     if (fields.text) {
       const { error } = await supabase
         .from('predict_texts')
