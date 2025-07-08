@@ -1,6 +1,14 @@
+// pages/api/predict.js
+
 import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
+
+export const config = {
+  api: {
+    bodyParser: true,
+  },
+};
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -8,7 +16,6 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  console.log('REQ BODY:', req.body);
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
@@ -16,44 +23,41 @@ export default async function handler(req, res) {
   try {
     const { image, label, confidence, timestamp } = req.body;
 
-    if (!label || typeof confidence === 'undefined' || !timestamp) {
+    if (!image || !label || typeof confidence === 'undefined' || !timestamp) {
+      console.error("Missing fields", { image, label, confidence, timestamp });
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    let imagePath = null;
+    // Salva immagine base64 su /public/uploads
+    const buffer = Buffer.from(image, 'base64');
+    const fileName = `${Date.now()}_${label}.jpg`;
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
 
-    if (image) {
-      const buffer = Buffer.from(image, 'base64');
-      const fileName = `${Date.now()}_${label}.jpg`;
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-
-      const filePath = path.join(uploadDir, fileName);
-      fs.writeFileSync(filePath, buffer);
-      imagePath = `/uploads/${fileName}`;
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
     }
 
-    const { data, error } = await supabase.from('predict_texts').insert({
+    const filePath = path.join(uploadDir, fileName);
+    fs.writeFileSync(filePath, buffer);
+    const imagePath = `/uploads/${fileName}`;
+
+    // Inserisci in Supabase
+    const { data, error } = await supabase.from('predict_texts').insert([{
       label,
       confidence,
       timestamp,
-      image_path: imagePath
-    });
+      image_path: imagePath,
+    }]);
 
-    console.log("DATA:", data);
-    console.log("ERROR:", error);
-
+    console.log("Inserted:", data);
     if (error) {
-      console.error('Supabase insert error:', error);
-      return res.status(500).json({ error: 'Failed to insert data into Supabase' });
+      console.error("Supabase insert error:", error);
+      return res.status(500).json({ error: 'DB insert failed', details: error });
     }
 
-    return res.status(200).json({ message: 'Prediction received and saved' });
-  } catch (e) {
-    console.error('Server error:', e);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(200).json({ message: 'Prediction received and saved', imagePath });
+  } catch (err) {
+    console.error("Server error:", err);
+    return res.status(500).json({ error: 'Server error', details: err.message });
   }
 }
