@@ -1,36 +1,24 @@
-// pages/index.js
+'use client'
 
-import { createClient } from "@supabase/supabase-js";
+import { useEffect, useState } from 'react'
 
-export async function getServerSideProps() {
-  const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY
-  );
+export default function Home() {
+  const [latestText, setLatestText] = useState<string | null>(null)
 
-  const { data, error } = await supabase
-    .from("predict_texts")
-    .select("text, created_at")
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .single();
+  useEffect(() => {
+    async function fetchText() {
+      const res = await fetch('/api/latest-text')
+      const json = await res.json()
+      setLatestText(json?.text ?? null)
+    }
 
-  return {
-    props: {
-      latestText: data?.text || null,
-    },
-  };
-}
+    fetchText()
+  }, [])
 
-export default function Home({ latestText }) {
   return (
-    <div style={{ padding: "2rem", fontFamily: "Arial" }}>
+    <main style={{ padding: '2rem', fontFamily: 'Arial' }}>
       <h1>🧠 Ultima Predizione</h1>
-      {latestText ? (
-        <p>{latestText}</p>
-      ) : (
-        <p><em>Nessun testo salvato ancora.</em></p>
-      )}
-    </div>
-  );
+      {latestText ? <p>{latestText}</p> : <p><em>Nessun testo salvato ancora.</em></p>}
+    </main>
+  )
 }
