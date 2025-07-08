@@ -1,6 +1,7 @@
+// pages/api/predict.js
+
 import { createClient } from '@supabase/supabase-js';
 
-// Inizializza il client Supabase
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -14,17 +15,16 @@ export default async function handler(req, res) {
   try {
     const { image, label, confidence, timestamp } = req.body;
 
-    // Verifica che i campi siano presenti
     if (!image || !label || typeof confidence === 'undefined' || !timestamp) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Inserisci i dati (inclusa immagine base64) nella tabella "predict_texts"
-    const { error } = await supabase.from('predict_texts').insert({
+    // Salva metadati e immagine base64 nel DB
+    const { data, error } = await supabase.from('predict_texts').insert({
       label,
       confidence,
       timestamp,
-      image_base64: image // 📌 assicurati che questa colonna esista su Supabase
+      image_base64: image
     });
 
     if (error) {
@@ -32,7 +32,11 @@ export default async function handler(req, res) {
       return res.status(500).json({ error: 'Failed to insert data into Supabase' });
     }
 
-    return res.status(200).json({ message: 'Prediction received and saved' });
+    return res.status(200).json({
+      message: 'Prediction received and saved',
+      rows_received: 1,
+      inserted_id: data?.[0]?.id || null
+    });
   } catch (e) {
     console.error('Server error:', e);
     return res.status(500).json({ error: 'Server error' });
