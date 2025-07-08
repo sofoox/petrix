@@ -1,5 +1,3 @@
-// pages/api/predict.js
-
 import fs from 'fs';
 import path from 'path';
 import { createClient } from '@supabase/supabase-js';
@@ -17,28 +15,31 @@ export default async function handler(req, res) {
   try {
     const { image, label, confidence, timestamp } = req.body;
 
-    if (!image || !label || typeof confidence === 'undefined' || !timestamp) {
+    if (!label || typeof confidence === 'undefined' || !timestamp) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // 🔽 Salva immagine base64 su /public/uploads/
-    const buffer = Buffer.from(image, 'base64');
-    const fileName = `${Date.now()}_${label}.jpg`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    let imagePath = null;
 
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    if (image) {
+      const buffer = Buffer.from(image, 'base64');
+      const fileName = `${Date.now()}_${label}.jpg`;
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, buffer);
+      imagePath = `/uploads/${fileName}`;
     }
 
-    const filePath = path.join(uploadDir, fileName);
-    fs.writeFileSync(filePath, buffer);
-
-    // 🔽 Salva metadati in Supabase
-    const { error } = await supabase.from('predict_texts').insert({
+    const { data, error } = await supabase.from('predict_texts').insert({
       label,
       confidence,
       timestamp,
-      image_path: `/uploads/${fileName}`
+      image_path: imagePath
     });
 
     console.log("DATA:", data);
