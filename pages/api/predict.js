@@ -1,7 +1,3 @@
-// pages/api/predict.js
-
-import fs from 'fs';
-import path from 'path';
 import { createClient } from '@supabase/supabase-js';
 
 export const config = {
@@ -28,34 +24,19 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Salva immagine base64 su /public/uploads
-    const buffer = Buffer.from(image, 'base64');
-    const fileName = `${Date.now()}_${label}.jpg`;
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-
-    const filePath = path.join(uploadDir, fileName);
-    fs.writeFileSync(filePath, buffer);
-    const imagePath = `/uploads/${fileName}`;
-
-    // Inserisci in Supabase
     const { data, error } = await supabase.from('predict_texts').insert([{
       label,
       confidence,
       timestamp,
-      image_path: imagePath,
+      image_base64: image,  // 👈 salvi direttamente la stringa base64
     }]);
 
-    console.log("Inserted:", data);
     if (error) {
       console.error("Supabase insert error:", error);
       return res.status(500).json({ error: 'DB insert failed', details: error });
     }
 
-    return res.status(200).json({ message: 'Prediction received and saved', imagePath });
+    return res.status(200).json({ message: 'Prediction saved in Supabase', id: data?.[0]?.id ?? null });
   } catch (err) {
     console.error("Server error:", err);
     return res.status(500).json({ error: 'Server error', details: err.message });
