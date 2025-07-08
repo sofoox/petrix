@@ -1,15 +1,6 @@
-// pages/api/predict.js
-
-import formidable from "formidable";
-import fs from "fs";
-import path from "path";
-import { createClient } from "@supabase/supabase-js";
-
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+import fs from 'fs';
+import path from 'path';
+import { createClient } from '@supabase/supabase-js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -17,47 +8,52 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method Not Allowed" });
+  console.log('REQ BODY:', req.body);
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
-  const form = new formidable.IncomingForm({ uploadDir: "/tmp", keepExtensions: true });
+  try {
+    const { image, label, confidence, timestamp } = req.body;
 
-  form.parse(req, async (err, fields, files) => {
-    if (err) {
-      console.error("Form parsing error:", err);
-      return res.status(500).json({ error: "Form parsing failed" });
+    if (!label || typeof confidence === 'undefined' || !timestamp) {
+      return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // 📸 Upload immagine
-    if (files.image) {
-      const image = files.image[0]; // Vercel usa array per ogni campo
-      const fileName = `${Date.now()}_${image.originalFilename}`;
-      const uploadDir = path.join(process.cwd(), "public", "uploads");
+    let imagePath = null;
 
-      if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+    if (image) {
+      const buffer = Buffer.from(image, 'base64');
+      const fileName = `${Date.now()}_${label}.jpg`;
+      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
 
-      const targetPath = path.join(uploadDir, fileName);
-      fs.renameSync(image.filepath, targetPath);
-
-      const imageUrl = `/uploads/${fileName}`;
-      return res.status(200).json({ message: "Image uploaded", imageUrl });
-    }
-
-    // 📝 Salva testo
-    if (fields.text) {
-      const { error } = await supabase
-        .from("predict_texts")
-        .insert({ text: fields.text[0] });
-
-      if (error) {
-        console.error("Supabase insert error:", error);
-        return res.status(500).json({ error: "Failed to insert text" });
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
       }
 
-      return res.status(200).json({ message: "Text saved to DB" });
+      const filePath = path.join(uploadDir, fileName);
+      fs.writeFileSync(filePath, buffer);
+      imagePath = `/uploads/${fileName}`;
     }
 
-    return res.status(400).json({ error: "No valid data received" });
-  });
+    const { data, error } = await supabase.from('predict_texts').insert({
+      label,
+      confidence,
+      timestamp,
+      image_path: imagePath
+    });
+
+    console.log("DATA:", data);
+    console.log("ERROR:", error);
+
+    if (error) {
+      console.error('Supabase insert error:', error);
+      return res.status(500).json({ error: 'Failed to insert data into Supabase' });
+    }
+
+    return res.status(200).json({ message: 'Prediction received and saved' });
+  } catch (e) {
+    console.error('Server error:', e);
+    return res.status(500).json({ error: 'Server error' });
+  }
 }
