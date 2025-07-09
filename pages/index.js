@@ -3,21 +3,32 @@
 import { useEffect, useState } from 'react';
 
 export default function Home() {
-  const [latestText, setLatestText] = useState(null);
+  const [prediction, setPrediction] = useState(null);
 
   useEffect(() => {
-    fetch('/api/latest-text')
+    fetch('/api/predict-latest')
       .then(res => res.json())
-      .then(data => setLatestText(data?.text ?? null));
+      .then(data => setPrediction(data));
   }, []);
 
   return (
     <div style={{ padding: '2rem', fontFamily: 'Arial' }}>
       <h1>🧠 Ultima Predizione</h1>
-      {latestText ? (
-        <p>{latestText}</p>
+      {prediction ? (
+        <div>
+          <p><strong>Label:</strong> {prediction.label}</p>
+          <p><strong>Confidence:</strong> {Math.round(prediction.confidence * 100)}%</p>
+          <p><strong>Timestamp:</strong> {new Date(prediction.timestamp).toLocaleString()}</p>
+          {prediction.image_base64 && (
+            <img
+              src={`data:image/jpeg;base64,${prediction.image_base64}`}
+              alt="Prediction"
+              style={{ maxWidth: '400px', marginTop: '1rem' }}
+            />
+          )}
+        </div>
       ) : (
-        <p><em>Nessun testo salvato ancora.</em></p>
+        <p><em>Nessuna predizione disponibile.</em></p>
       )}
     </div>
   );
