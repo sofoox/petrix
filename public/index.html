@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Ultima Predizione</title>
+  </head>
+  <body>
+    <h1>🧠 Ultima Predizione</h1>
+    <p id="output"><em>Caricamento...</em></p>
+
+    <script>
+      fetch('/api/latest-text')
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('output').textContent = data.text || 'Nessun dato.';
+        });
+    </script>
+  </body>
+</html>
