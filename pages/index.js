@@ -16,7 +16,7 @@ export default function Home() {
     style={{ 
       padding: '2rem', 
       fontFamily: 'Arial'
-      color: 'black'}}
+      color: 'white'}}
       <h1>ULTIMA PREDIZIONE</h1>
       {prediction ? (
         <div>
