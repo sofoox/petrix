@@ -15,13 +15,7 @@ export default function Home() {
     <div 
     style={{ 
       padding: '2rem', 
-      fontFamily: 'space.mono',
-    backgroundImage: 'url("/matrix.gif")', 
-        backgroundSize: 'cover',
-        backgroundRepeat: 'no-repeat',
-        backgroundPosition: 'center',
-        minHeight: '100vh'}}
->
+      fontFamily: 'Arial'>}}
       <h1>ULTIMA PREDIZIONE</h1>
       {prediction ? (
         <div>
