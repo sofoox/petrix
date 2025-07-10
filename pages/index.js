@@ -12,8 +12,17 @@ export default function Home() {
   }, []);
 
   return (
-    <div style={{ padding: '2rem', fontFamily: 'Arial' }}>
-      <h1>🧠 Ultima Predizione</h1>
+    <div 
+    style={{ 
+      padding: '2rem', 
+      fontFamily: 'space.mono',
+    backgroundImage: 'url("/matrix.gif")', 
+        backgroundSize: 'cover',
+        backgroundRepeat: 'no-repeat',
+        backgroundPosition: 'center',
+        minHeight: '100vh'}}
+>
+      <h1>ULTIMA PREDIZIONE</h1>
       {prediction ? (
         <div>
           <p><strong>Label:</strong> {prediction.label}</p>
