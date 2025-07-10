@@ -21,7 +21,7 @@ export default function Home() {
       <h1>ULTIMA PREDIZIONE</h1>
       {prediction ? (
         <div>
-          <p><strong>Label:</strong> pillola rossa </p> {/* prediction.label */}
+          <p><strong>Label:</strong> pIllola rossa </p> {/* prediction.label */}
           <p><strong>Confidence:</strong> {Math.round(prediction.confidence * 100)}%</p>
           <p><strong>Timestamp:</strong> {new Date(prediction.timestamp).toLocaleString()}</p>
           {prediction.image_base64 && (
